@@ -159,7 +159,9 @@ if (instance.getItem(jobName) == null) {
 
     def job = instance.createProject(WorkflowJob.class, jobName)
     job.setDefinition(flowDef)
-    job.addTrigger(new SCMTrigger('H/5 * * * *'))
+    def trigger = new SCMTrigger('H/5 * * * *')
+    job.addTrigger(trigger)
+    trigger.start(job, true)
     job.save()
 }
 instance.save()
