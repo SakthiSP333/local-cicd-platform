@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Local CI/CD &amp; GitOps Study Guide</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    color: #1c2530;
+    line-height: 1.55;
+    font-size: 13px;
+    margin: 0;
+  }
+  h1, h2, h3, h4 { color: #10233f; font-family: 'Segoe UI Semibold', Helvetica, Arial, sans-serif; }
+  h1 { font-size: 26px; border-bottom: 3px solid #2b6cb0; padding-bottom: 8px; margin-top: 0; page-break-before: always; }
+  h1:first-of-type { page-break-before: avoid; }
+  h2 { font-size: 18px; color: #1a4e8a; margin-top: 28px; border-left: 5px solid #2b6cb0; padding-left: 10px; }
+  h3 { font-size: 14.5px; color: #26426b; margin-top: 18px; }
+  h4 { font-size: 13px; color: #3a5578; margin-top: 12px; }
+  p { margin: 8px 0; }
+  code { font-family: 'Cascadia Code', Consolas, 'Courier New', monospace; background: #eef1f6; color: #b3261e; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+  pre { background: #0f1b2b; color: #d9e6f5; padding: 12px 14px; border-radius: 6px; overflow-x: auto; font-size: 11.5px; line-height: 1.5; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .tag { color: #7fd0ff; }
+  .str { color: #ffd27f; }
+  .cmt { color: #7a8ba3; font-style: italic; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 12px; }
+  th, td { border: 1px solid #cdd6e0; padding: 6px 9px; text-align: left; vertical-align: top; }
+  th { background: #1a4e8a; color: #fff; }
+  tr:nth-child(even) { background: #f4f7fb; }
+  .note { background: #fff8e1; border-left: 4px solid #e0a800; padding: 8px 12px; margin: 12px 0; border-radius: 4px; }
+  .note strong { color: #8a5a00; }
+  .callout { background: #e9f3ff; border-left: 4px solid #2b6cb0; padding: 8px 12px; margin: 12px 0; border-radius: 4px; }
+  .badge { display: inline-block; background: #2b6cb0; color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 10px; margin-right: 4px; }
+  .cover { text-align: center; padding-top: 22vh; page-break-after: always; }
+  .cover h1 { border: none; font-size: 34px; page-break-before: avoid; }
+  .cover .sub { font-size: 15px; color: #4a5b73; margin-top: 10px; }
+  .cover .toolrow { margin-top: 36px; }
+  .cover .toolrow span { display:inline-block; margin: 4px 6px; padding: 6px 14px; background:#10233f; color:#fff; border-radius: 20px; font-size: 12px; }
+  .cover .meta { margin-top: 60px; font-size: 11px; color: #7a8ba3; }
+  .toc { page-break-after: always; }
+  .toc ol { font-size: 13.5px; }
+  .toc li { margin: 6px 0; }
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 16px 0; font-size: 11.5px; }
+  .flow .box { padding: 8px 10px; border-radius: 6px; color: #fff; font-weight: 600; min-width: 90px; text-align: center; }
+  .flow .arrow { color: #7a8ba3; font-size: 16px; }
+  .c-dev   { background: #4a5568; }
+  .c-git   { background: #24292e; }
+  .c-ci    { background: #d97706; }
+  .c-scan  { background: #b91c1c; }
+  .c-reg   { background: #6d28d9; }
+  .c-gitops{ background: #047857; }
+  .c-k8s   { background: #1d4ed8; }
+  .c-mon   { background: #be185d; }
+  .timeline { border-left: 3px solid #2b6cb0; padding-left: 16px; margin: 16px 0; }
+  .timeline .step { margin-bottom: 10px; position: relative; }
+  .timeline .step::before { content: ""; position: absolute; left: -22px; top: 4px; width: 9px; height: 9px; border-radius: 50%; background: #2b6cb0; }
+  .timeline .step b { color: #10233f; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .card { border: 1px solid #cdd6e0; border-radius: 6px; padding: 10px 12px; }
+  .card h4 { margin-top: 0; }
+  small.file { color: #6d7d94; font-family: Consolas, monospace; }
+  .kbd { font-family: Consolas, monospace; background:#e2e8f0; border-radius:4px; padding:1px 5px; border:1px solid #cbd5e0; }
+</style>
+</head>
+<body>
+
+<!-- ===================== COVER ===================== -->
+<div class="cover">
+  <h1>Kubernetes, Docker &amp; GitOps<br>Study Guide &amp; Cheat Sheet</h1>
+  <div class="sub">Concepts, commands, and worked examples — built from the <code>local-cicd-platform</code> project<br>(go-api · go-api-helm · Minikube · Harbor · Jenkins · ArgoCD · Prometheus/Grafana)</div>
+  <div class="toolrow">
+    <span>Docker</span><span>Kubernetes</span><span>Helm</span><span>Harbor</span>
+    <span>Jenkins</span><span>ArgoCD</span><span>Prometheus</span><span>Grafana</span><span>Trivy / gosec / gitleaks</span>
+  </div>
+  <div class="meta">Generated for internal learning &amp; onboarding · every example is taken from this repository's actual files</div>
+</div>
+
+<!-- ===================== TOC ===================== -->
+<div class="toc">
+<h1 style="page-break-before:avoid;">Table of Contents</h1>
+<ol>
+  <li>The Big Picture — how everything fits together</li>
+  <li>Docker — containers &amp; image builds</li>
+  <li>Kubernetes — orchestration primitives</li>
+  <li>Helm — packaging &amp; templating Kubernetes apps</li>
+  <li>Harbor — the container registry</li>
+  <li>Jenkins — continuous integration</li>
+  <li>ArgoCD — GitOps continuous delivery</li>
+  <li>Prometheus &amp; Grafana — metrics &amp; dashboards</li>
+  <li>Supporting security tooling (Trivy, gosec, govulncheck, gitleaks, golangci-lint)</li>
+  <li>Master Command Cheat Sheet</li>
+  <li>Troubleshooting Playbook</li>
+  <li>Glossary</li>
+</ol>
+</div>
+
+<!-- ===================== 1. BIG PICTURE ===================== -->
+<h1>1. The Big Picture</h1>
+
+<p>This project is a self-contained, single-laptop sandbox that reproduces a <b>real GitOps delivery pipeline</b>. It spans three separate git repositories, deliberately mirroring how production GitOps setups separate "app CI" from "cluster state":</p>
+
+<table>
+<tr><th>Repo</th><th>Contains</th><th>Who touches it</th></tr>
+<tr><td><code>go-api</code></td><td>Go/Gin REST API source, <code>Dockerfile</code>, <code>Jenkinsfile</code></td><td>Developer pushes; Jenkins polls &amp; builds</td></tr>
+<tr><td><code>go-api-helm</code></td><td>Helm chart + ArgoCD <code>Application</code>/<code>ApplicationSet</code></td><td>Jenkins pushes image-tag bumps; ArgoCD watches</td></tr>
+<tr><td><code>local-cicd-platform</code> (this repo)</td><td>Bootstrap scripts, root <code>Makefile</code>, infra installers</td><td>You, once, to stand the whole platform up</td></tr>
+</table>
+
+<h2>1.1 End-to-end flow (component view)</h2>
+<div class="flow">
+  <div class="box c-dev">Developer</div><div class="arrow">→</div>
+  <div class="box c-git">GitHub<br>go-api</div><div class="arrow">→</div>
+  <div class="box c-ci">Jenkins<br>(poll ~5 min)</div><div class="arrow">→</div>
+  <div class="box c-scan">Trivy scan</div><div class="arrow">→</div>
+  <div class="box c-reg">Harbor<br>:8082</div><div class="arrow">→</div>
+  <div class="box c-git">GitHub<br>go-api-helm</div><div class="arrow">→</div>
+  <div class="box c-gitops">ArgoCD<br>(sync ~3 min)</div><div class="arrow">→</div>
+  <div class="box c-k8s">Minikube<br>pods</div><div class="arrow">→</div>
+  <div class="box c-mon">Prometheus<br>→ Grafana</div>
+</div>
+
+<h2>1.2 End-to-end flow (timeline / sequence view)</h2>
+<div class="timeline">
+  <div class="step"><b>1.</b> Developer runs <code>git push</code> against <code>go-api</code> on GitHub.</div>
+  <div class="step"><b>2.</b> Jenkins' seed job <code>go-api-pipeline</code> polls the repo every ~5&nbsp;minutes (<code>SCMTrigger('H/5 * * * *')</code>) and detects the new commit.</div>
+  <div class="step"><b>3.</b> Pipeline runs <code>go mod download</code> → lint/format → static security scans → unit tests + benchmarks in parallel.</div>
+  <div class="step"><b>4.</b> Pipeline builds a multi-stage Docker image tagged with the Jenkins <code>BUILD_NUMBER</code>.</div>
+  <div class="step"><b>5.</b> Trivy scans the image; pipeline fails the build on any HIGH/CRITICAL CVE.</div>
+  <div class="step"><b>6.</b> Pipeline logs into Harbor with the <code>harbor-robot</code> credential and pushes <code>:BUILD_NUMBER</code> and <code>:latest</code>.</div>
+  <div class="step"><b>7.</b> Pipeline clones <code>go-api-helm</code> over SSH, runs <code>update-chart.sh</code> to bump <code>values.yaml</code>'s <code>image.tag</code> and <code>Chart.yaml</code>'s version, commits <code>[skip ci]</code>, and pushes to <code>main</code>.</div>
+  <div class="step"><b>8.</b> ArgoCD reconciles <code>go-api-helm</code> on its default ~3-minute polling interval, diffs live cluster state against the new Git commit.</div>
+  <div class="step"><b>9.</b> ArgoCD applies the delta (new image tag) — <code>automated: {prune: true, selfHeal: true}</code> means it self-corrects any manual drift too.</div>
+  <div class="step"><b>10.</b> Kubernetes pulls the new image from Harbor (via <code>host.minikube.internal:8082</code> from inside the cluster), runs startup/liveness/readiness probes, and performs a zero-downtime rolling update.</div>
+  <div class="step"><b>11.</b> The app's <code>/metrics</code> endpoint is scraped by Prometheus and visualized live in the pre-provisioned Grafana dashboard.</div>
+</div>
+
+<div class="callout"><strong>Why two different Git protocols?</strong> ArgoCD reads <code>go-api-helm</code> over plain <b>HTTPS</b> (public repo, read-only, no credentials needed). Jenkins writes to the same repo over <b>SSH</b> (needs push access). This asymmetry is a deliberate least-privilege split: the thing that only reads never holds write credentials.</div>
+
+<h2>1.3 Namespace layout</h2>
+<table>
+<tr><th>Namespace</th><th>Created by</th><th>Purpose</th></tr>
+<tr><td><code>go-api-dev</code></td><td>ArgoCD (<code>CreateNamespace=true</code>)</td><td>1 replica, debug logs, ingress <code>go-api.dev.local</code>, ServiceMonitor <b>on</b></td></tr>
+<tr><td><code>go-api-stage</code></td><td>bootstrap.sh</td><td>2 replicas, ingress <code>go-api.stage.local</code></td></tr>
+<tr><td><code>go-api-prod</code></td><td>bootstrap.sh</td><td>3 replicas, HPA + PDB + NetworkPolicy <b>on</b>, TLS ingress</td></tr>
+<tr><td><code>argocd</code></td><td>install-argocd.sh</td><td>ArgoCD control plane</td></tr>
+<tr><td><code>monitoring</code></td><td>install-monitoring.sh</td><td>kube-prometheus-stack (Prometheus, Grafana, kube-state-metrics, node-exporter)</td></tr>
+<tr><td><code>ingress-nginx</code></td><td>Minikube addon</td><td>Ingress controller</td></tr>
+</table>
+
+<div class="note"><strong>Bootstrap ordering matters:</strong> <code>scripts/bootstrap.sh</code> installs monitoring <i>before</i> ArgoCD, because the Helm chart's <code>ServiceMonitor</code> template is a Prometheus-Operator CRD — if ArgoCD tries to sync it before that CRD exists, the <code>Application</code> shows status <code>Unknown</code>.</div>
+
+<!-- ===================== 2. DOCKER ===================== -->
+<h1>2. Docker</h1>
+
+<h2>2.1 Core concepts</h2>
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td><b>Image</b></td><td>Immutable, layered filesystem + metadata used to spin up containers. Built from a <code>Dockerfile</code>.</td></tr>
+<tr><td><b>Container</b></td><td>A running (or stopped) instance of an image — an isolated process with its own filesystem, network namespace, and cgroup limits.</td></tr>
+<tr><td><b>Layer</b></td><td>Each Dockerfile instruction (<code>RUN</code>, <code>COPY</code>, ...) adds a cached, reusable filesystem layer.</td></tr>
+<tr><td><b>Multi-stage build</b></td><td>Multiple <code>FROM</code> blocks in one Dockerfile; later stages copy only the artifacts they need from earlier ones, so build tools never ship in the final image.</td></tr>
+<tr><td><b>Registry</b></td><td>A server that stores and serves images by <code>name:tag</code> (Docker Hub, Harbor, ECR, GHCR...).</td></tr>
+<tr><td><b>Docker-outside-of-Docker (DooD)</b></td><td>Mounting the host's <code>/var/run/docker.sock</code> into a container so that container's <code>docker</code> CLI drives the <i>host's</i> daemon, instead of running a nested daemon (Docker-in-Docker).</td></tr>
+</table>
+
+<h2>2.2 In this project: <code>go-api/Dockerfile</code> (production, multi-stage)</h2>
+<pre><code><span class="cmt"># Stage 1: compile a static binary</span>
+<span class="tag">FROM</span> golang:1.21-alpine3.18 <span class="tag">AS</span> builder
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY cmd/ internal/ pkg/ ./
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -ldflags="-w -s" -o /app/go-api ./cmd/api/main.go
+
+<span class="cmt"># Stage 2: tiny runtime image, non-root user</span>
+<span class="tag">FROM</span> alpine:3.18.4
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+COPY --from=builder /app/go-api /app/go-api
+USER appuser
+EXPOSE 8080
+HEALTHCHECK CMD wget --spider http://localhost:${PORT}/healthz || exit 1
+ENTRYPOINT ["/app/go-api"]</code></pre>
+
+<p>Why this matters: stage 1's Go toolchain (~350&nbsp;MB) never reaches the final image — only the compiled, stripped (<code>-ldflags="-w -s"</code>) static binary does. <code>CGO_ENABLED=0</code> means no libc dependency, so a minimal <code>alpine</code> base is enough. Running as a non-root <code>appuser</code> and dropping capabilities (enforced again later at the Kubernetes <code>securityContext</code> level) limits blast radius if the container is ever compromised.</p>
+
+<h2>2.3 Dev image: <code>Dockerfile.dev</code> + <code>docker-compose.yml</code></h2>
+<p>A separate, single-stage image installs <a><code>air</code></a> (hot-reload) and mounts source code as a bind volume, so local edits recompile instantly without rebuilding the image — never used in the CI path, only for local development.</p>
+
+<h2>2.4 Command cheat sheet</h2>
+<table>
+<tr><th>Command</th><th>What it does</th></tr>
+<tr><td><code>docker build -t &lt;repo&gt;:&lt;tag&gt; .</code></td><td>Build an image from the Dockerfile in the current directory</td></tr>
+<tr><td><code>docker images</code></td><td>List local images</td></tr>
+<tr><td><code>docker ps</code> / <code>docker ps -a</code></td><td>List running / all containers</td></tr>
+<tr><td><code>docker run -d -p 8080:8080 &lt;image&gt;</code></td><td>Run detached, mapping host:container port</td></tr>
+<tr><td><code>docker exec -it &lt;container&gt; sh</code></td><td>Shell into a running container</td></tr>
+<tr><td><code>docker logs -f &lt;container&gt;</code></td><td>Stream container logs</td></tr>
+<tr><td><code>docker login &lt;registry&gt;</code></td><td>Authenticate to a registry (used with Harbor robot creds here)</td></tr>
+<tr><td><code>docker tag &lt;src&gt; &lt;dst&gt;</code></td><td>Add another tag to an existing image</td></tr>
+<tr><td><code>docker push / pull &lt;repo&gt;:&lt;tag&gt;</code></td><td>Upload / download an image to/from a registry</td></tr>
+<tr><td><code>docker compose up -d</code></td><td>Start a multi-container stack defined in <code>docker-compose.yml</code></td></tr>
+<tr><td><code>docker system prune -a</code></td><td>Remove all unused images/containers/networks (frees disk)</td></tr>
+</table>
+
+<!-- ===================== 3. KUBERNETES ===================== -->
+<h1>3. Kubernetes</h1>
+
+<h2>3.1 Core objects used in this project</h2>
+<div class="grid2">
+<div class="card"><h4>Pod</h4>Smallest deployable unit — one or more containers sharing network/storage. You rarely create Pods directly; a Deployment manages them.</div>
+<div class="card"><h4>Deployment</h4>Declares desired replica count &amp; Pod template; drives <b>RollingUpdate</b> to roll out new versions with zero downtime.</div>
+<div class="card"><h4>Service</h4>Stable virtual IP + DNS name in front of a set of Pods, selected by label. This project uses <code>ClusterIP</code> (internal only).</div>
+<div class="card"><h4>Ingress</h4>HTTP(S) routing rule mapping a hostname/path to a Service, handled by the ingress-nginx controller (a Minikube addon here).</div>
+<div class="card"><h4>ConfigMap</h4>Non-secret key/value config injected as env vars or files. Holds <code>ENV</code>, <code>LOG_LEVEL</code>, <code>PORT</code> here.</div>
+<div class="card"><h4>Secret</h4>Same idea as ConfigMap but for sensitive data (base64-encoded, not encrypted by default). Holds <code>AUTH_TOKEN</code> here.</div>
+<div class="card"><h4>Namespace</h4>Logical partition of a cluster for multi-tenancy — this project uses one per environment (<code>go-api-dev/stage/prod</code>).</div>
+<div class="card"><h4>ServiceAccount / RBAC</h4>Identity a Pod runs as, and <code>Role</code>/<code>RoleBinding</code> (namespace-scoped) or <code>ClusterRole</code>/<code>ClusterRoleBinding</code> (cluster-scoped) grants for that identity.</div>
+<div class="card"><h4>HPA (HorizontalPodAutoscaler)</h4>Automatically scales replica count based on observed metrics (CPU % here).</div>
+<div class="card"><h4>PDB (PodDisruptionBudget)</h4>Guarantees a minimum number of Pods stay up during voluntary disruptions (node drains, cluster upgrades).</div>
+<div class="card"><h4>NetworkPolicy</h4>Firewall rules for Pod-to-Pod / Pod-to-external traffic, enforced by the CNI.</div>
+<div class="card"><h4>PVC (PersistentVolumeClaim)</h4>A request for durable storage, bound to a PersistentVolume by a StorageClass.</div>
+</div>
+
+<h2>3.2 Probes — how Kubernetes knows a Pod is healthy</h2>
+<table>
+<tr><th>Probe</th><th>Purpose</th><th>In this chart</th></tr>
+<tr><td><b>startupProbe</b></td><td>Gives slow-starting apps grace time before liveness kicks in</td><td><code>GET /livez</code>, every 2s, 10 tries</td></tr>
+<tr><td><b>livenessProbe</b></td><td>Restarts the container if it stops responding</td><td><code>GET /livez</code>, every 10s</td></tr>
+<tr><td><b>readinessProbe</b></td><td>Removes the Pod from Service endpoints if not ready to serve traffic (without restarting it)</td><td><code>GET /readyz</code>, every 5s</td></tr>
+</table>
+
+<h2>3.3 Deployment manifest, annotated (<small class="file">go-api-helm/templates/deployment.yaml</small>)</h2>
+<pre><code><span class="tag">spec</span>:
+  strategy:
+    <span class="tag">type</span>: RollingUpdate       <span class="cmt"># replace pods gradually, never all-at-once</span>
+    rollingUpdate:
+      maxSurge: 25%             <span class="cmt"># up to 25% extra pods during rollout</span>
+      maxUnavailable: 25%       <span class="cmt"># at most 25% of pods down at once</span>
+  template:
+    spec:
+      securityContext:          <span class="cmt"># pod-level</span>
+        fsGroup: 2000
+      containers:
+        - securityContext:       <span class="cmt"># container-level, more restrictive</span>
+            capabilities: { drop: [ALL] }
+            runAsNonRoot: true
+            runAsUser: 10001
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          env:
+            - name: AUTH_TOKEN
+              valueFrom: { secretKeyRef: { name: go-api-secret, key: AUTH_TOKEN } }
+          startupProbe:   { httpGet: { path: /livez,  port: http } }
+          livenessProbe:  { httpGet: { path: /livez,  port: http } }
+          readinessProbe: { httpGet: { path: /readyz, port: http } }</code></pre>
+
+<h2>3.4 Networking model in this project</h2>
+<p>The chart's Service is <code>ClusterIP</code> (port 80 → container port 8080). Ingress (nginx class) is only <b>enabled by default in dev</b>; staging/prod also enable it with environment-specific hostnames (<code>go-api.stage.local</code>, <code>go-api.prod.local</code>, TLS redirect on in prod). Locally, <code>make port-forward</code> exposes each environment's Service directly on the host (dev 8081, stage 8083, prod 8084) — bypassing Ingress entirely for quick access.</p>
+
+<h2>3.5 Command cheat sheet</h2>
+<table>
+<tr><th>Command</th><th>What it does</th></tr>
+<tr><td><code>kubectl get pods -A</code></td><td>List Pods across all namespaces</td></tr>
+<tr><td><code>kubectl get pods -n go-api-dev -o wide</code></td><td>List Pods in one namespace with node/IP columns</td></tr>
+<tr><td><code>kubectl describe pod &lt;name&gt; -n &lt;ns&gt;</code></td><td>Full details + recent Events (first stop for debugging)</td></tr>
+<tr><td><code>kubectl logs -f &lt;pod&gt; -n &lt;ns&gt;</code></td><td>Stream a Pod's logs</td></tr>
+<tr><td><code>kubectl logs -l app.kubernetes.io/name=go-api -n go-api-dev -f</code></td><td>Stream logs from all Pods matching a label (what <code>make logs-dev</code> runs)</td></tr>
+<tr><td><code>kubectl exec -it &lt;pod&gt; -n &lt;ns&gt; -- sh</code></td><td>Shell into a running Pod</td></tr>
+<tr><td><code>kubectl apply -f &lt;file&gt;</code></td><td>Create/update resources declaratively from a manifest</td></tr>
+<tr><td><code>kubectl delete -f &lt;file&gt;</code></td><td>Remove resources defined in a manifest</td></tr>
+<tr><td><code>kubectl get events -n &lt;ns&gt; --sort-by=.lastTimestamp</code></td><td>See what the control plane has been doing recently</td></tr>
+<tr><td><code>kubectl port-forward svc/&lt;svc&gt; -n &lt;ns&gt; 8081:80</code></td><td>Tunnel a local port to a cluster Service (no Ingress needed)</td></tr>
+<tr><td><code>kubectl rollout status deployment/&lt;name&gt; -n &lt;ns&gt;</code></td><td>Watch a rolling update until it completes</td></tr>
+<tr><td><code>kubectl rollout undo deployment/&lt;name&gt; -n &lt;ns&gt;</code></td><td>Roll back to the previous ReplicaSet</td></tr>
+<tr><td><code>kubectl get hpa -n &lt;ns&gt;</code></td><td>Check autoscaler target vs. current CPU utilization</td></tr>
+<tr><td><code>kubectl top pods -n &lt;ns&gt;</code></td><td>Live CPU/mem usage (needs metrics-server, installed here)</td></tr>
+<tr><td><code>kubectl get ns</code></td><td>List namespaces</td></tr>
+<tr><td><code>minikube start --driver=docker --insecure-registry="host.minikube.internal:8082" --addons=ingress,dashboard</code></td><td>Bring up the local cluster used by this project, allowing HTTP-only Harbor pulls</td></tr>
+<tr><td><code>minikube dashboard</code></td><td>Open the web UI for the cluster</td></tr>
+</table>
+
+<!-- ===================== 4. HELM ===================== -->
+<h1>4. Helm</h1>
+
+<h2>4.1 Core concepts</h2>
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td><b>Chart</b></td><td>A packaged bundle of Kubernetes templates + metadata (<code>Chart.yaml</code>) + default config (<code>values.yaml</code>). This project has one chart: <code>go-api-helm</code>.</td></tr>
+<tr><td><b>Values file</b></td><td>YAML overrides fed into the chart's templates. Helm merges multiple <code>-f</code> files left-to-right, later files win.</td></tr>
+<tr><td><b>Template</b></td><td>A Kubernetes manifest with Go-template placeholders (<code>{{ .Values.x }}</code>), rendered at install/upgrade time.</td></tr>
+<tr><td><b>Release</b></td><td>A named, versioned instance of a chart installed into a cluster/namespace (e.g. <code>go-api-dev</code>).</td></tr>
+<tr><td><b>Helper template (<code>_helpers.tpl</code>)</b></td><td>Reusable named templates (e.g. <code>go-api.fullname</code>, <code>go-api.labels</code>) shared across manifests to avoid repetition.</td></tr>
+</table>
+
+<h2>4.2 Environment overlay pattern used here</h2>
+<p>Rather than one values file per cluster, this chart layers a shared base over an environment-specific overlay — exactly what ArgoCD's <code>helm.valueFiles</code> list does:</p>
+<pre><code>helm.valueFiles:
+  - values.yaml        <span class="cmt"># shared defaults</span>
+  - values-dev.yaml     <span class="cmt"># environment-specific overrides, applied last (wins)</span></code></pre>
+
+<table>
+<tr><th>File</th><th>Replicas</th><th>Log level</th><th>Notable overrides</th></tr>
+<tr><td><code>values.yaml</code> (base)</td><td>1</td><td>info</td><td>image repo/tag, security context, all feature flags <b>off</b> by default</td></tr>
+<tr><td><code>values-dev.yaml</code></td><td>1</td><td>debug</td><td>Ingress <b>on</b> (<code>go-api.dev.local</code>), <b>ServiceMonitor on</b> (only env with metrics scraping by default)</td></tr>
+<tr><td><code>values-stage.yaml</code></td><td>2</td><td>info</td><td>Mid-tier resources, ingress host <code>go-api.stage.local</code></td></tr>
+<tr><td><code>values-prod.yaml</code></td><td>3</td><td>warn</td><td>Autoscaling (3–10 @75% CPU), PDB (<code>minAvailable: 2</code>), NetworkPolicy on, TLS ingress</td></tr>
+</table>
+
+<div class="note"><strong>Learning note:</strong> <code>values-prod.yaml</code> hardcodes a mock <code>authToken</code> with a comment admitting: <i>"In enterprise setups, this is injected via vault/external secrets."</i> This repo intentionally does <b>not</b> implement Vault/External-Secrets — a good next exercise once you're comfortable with the basics.</div>
+
+<h2>4.3 Key templates in <code>go-api-helm/templates/</code></h2>
+<table>
+<tr><th>Template</th><th>Renders</th><th>Gated by</th></tr>
+<tr><td><code>deployment.yaml</code></td><td>Deployment with probes, env-from-ConfigMap/Secret, security context</td><td>always</td></tr>
+<tr><td><code>service.yaml</code></td><td>ClusterIP Service</td><td>always</td></tr>
+<tr><td><code>configmap.yaml</code> / <code>secret.yaml</code></td><td>App config &amp; auth token</td><td>always</td></tr>
+<tr><td><code>ingress.yaml</code></td><td>Ingress rule(s)</td><td><code>ingress.enabled</code></td></tr>
+<tr><td><code>hpa.yaml</code></td><td>HorizontalPodAutoscaler (autoscaling/v2)</td><td><code>autoscaling.enabled</code></td></tr>
+<tr><td><code>pdb.yaml</code></td><td>PodDisruptionBudget</td><td><code>pdb.enabled</code></td></tr>
+<tr><td><code>networkpolicy.yaml</code></td><td>Ingress/egress firewall rules</td><td><code>networkPolicy.enabled</code></td></tr>
+<tr><td><code>pvc.yaml</code></td><td>PersistentVolumeClaim</td><td><code>pvc.enabled</code></td></tr>
+<tr><td><code>rbac.yaml</code></td><td>Role/RoleBinding + ClusterRole/ClusterRoleBinding</td><td>always (bound to the app's own ServiceAccount)</td></tr>
+<tr><td><code>servicemonitor.yaml</code></td><td>Prometheus Operator scrape config for <code>/metrics</code></td><td><code>serviceMonitor.enabled</code></td></tr>
+<tr><td><code>grafana-dashboard.yaml</code></td><td>ConfigMap holding a pre-built dashboard JSON, auto-loaded by Grafana's sidecar</td><td><code>serviceMonitor.enabled</code> (shared flag)</td></tr>
+<tr><td><code>NOTES.txt</code></td><td>Post-install "how to access your app" printout</td><td>—</td></tr>
+</table>
+
+<h2>4.4 Command cheat sheet</h2>
+<table>
+<tr><th>Command</th><th>What it does</th></tr>
+<tr><td><code>helm template . -f values.yaml -f values-dev.yaml</code></td><td>Render manifests locally without installing — best way to sanity-check a chart change</td></tr>
+<tr><td><code>helm upgrade --install go-api-dev . -f values.yaml -f values-dev.yaml -n go-api-dev</code></td><td>Install if new, upgrade if it exists (idempotent) — used to deploy this chart manually</td></tr>
+<tr><td><code>helm lint .</code></td><td>Static-check a chart for common mistakes</td></tr>
+<tr><td><code>helm list -n &lt;ns&gt;</code></td><td>Show releases installed in a namespace</td></tr>
+<tr><td><code>helm status &lt;release&gt; -n &lt;ns&gt;</code></td><td>Show a release's current state</td></tr>
+<tr><td><code>helm rollback &lt;release&gt; &lt;revision&gt; -n &lt;ns&gt;</code></td><td>Roll back to a previous release revision</td></tr>
+<tr><td><code>helm uninstall &lt;release&gt; -n &lt;ns&gt;</code></td><td>Remove a release and its resources</td></tr>
+<tr><td><code>helm repo add prometheus-community https://prometheus-community.github.io/helm-charts</code></td><td>Register a chart repository (used to install kube-prometheus-stack)</td></tr>
+<tr><td><code>helm get values &lt;release&gt; -n &lt;ns&gt;</code></td><td>Show the effective values currently in use by a release</td></tr>
+</table>
+
+<!-- ===================== 5. HARBOR ===================== -->
+<h1>5. Harbor</h1>
+
+<h2>5.1 Core concepts</h2>
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td><b>Registry</b></td><td>Harbor itself — an OCI-compliant image registry with a web UI, RBAC, and vulnerability scanning built in (an open-source alternative to Docker Hub / ECR / GCR).</td></tr>
+<tr><td><b>Project</b></td><td>A namespace inside Harbor grouping repositories, with its own access policy (public/private) and quotas. This project uses one project: <code>library</code>.</td></tr>
+<tr><td><b>Robot account</b></td><td>A non-human, scoped credential (e.g. <code>robot$jenkins-robot</code>) used by CI systems instead of a real user's password.</td></tr>
+<tr><td><b>Trivy adapter</b></td><td>An optional Harbor component giving the registry its own built-in CVE scanner UI, independent of any scanner run by CI.</td></tr>
+</table>
+
+<h2>5.2 How this project's Harbor is configured</h2>
+<p>Installed by <code>scripts/install-harbor.sh</code> (Harbor v2.8.2, official online installer), then patched via <code>sed</code> into:</p>
+<pre><code>hostname: localhost
+http:
+  port: 8082              <span class="cmt"># moved off the default 80 to avoid clashing with Jenkins on 8080</span>
+harbor_admin_password: Harbor12345
+<span class="cmt"># https: block fully commented out -> HTTP-only registry</span></code></pre>
+
+<div class="note"><strong>Why HTTP-only matters:</strong> container runtimes refuse to pull from a plain-HTTP registry by default ("insecure registry"). That's why Minikube in this project is started with <code>--insecure-registry="host.minikube.internal:8082"</code> — explicitly whitelisting Harbor as an exception. In production you would terminate TLS instead.</div>
+
+<h2>5.3 Dual addressing — one registry, two hostnames</h2>
+<table>
+<tr><th>Caller</th><th>Address used</th><th>Why</th></tr>
+<tr><td>Jenkins (host Docker daemon)</td><td><code>localhost:8082</code></td><td>Jenkins' Docker CLI talks to the host daemon directly (Docker-outside-of-Docker)</td></tr>
+<tr><td>Kubelet inside Minikube</td><td><code>host.minikube.internal:8082</code></td><td>From inside the Minikube VM, <code>localhost</code> means the VM itself, not your laptop — Minikube provides this DNS alias to reach the host</td></tr>
+</table>
+
+<h2>5.4 The robot account (<small class="file">scripts/create-harbor-project.sh</small>)</h2>
+<p>Automated purely via Harbor's REST API (<code>http://localhost:8082/api/v2.0</code>): creates the public <code>library</code> project, then a system-level robot <code>jenkins-robot</code> scoped to <code>repository:push</code>, <code>repository:pull</code>, <code>artifact:create</code>, <code>artifact:delete</code> on that project only — never full-admin access. Credentials land in <code>infrastructure/harbor-robot.env</code> (gitignored, chmod 600):</p>
+<pre><code>HARBOR_REGISTRY=localhost:8082
+HARBOR_PROJECT=library
+HARBOR_ROBOT_USER=robot$jenkins-robot
+HARBOR_ROBOT_SECRET=&lt;generated&gt;</code></pre>
+<div class="note"><strong>Gotcha:</strong> the robot username literally contains a <code>$</code> character. Anything that later <code>source</code>s this env file must quote the variable — unquoted shell expansion would try to interpret <code>$jenkins-robot</code> as a variable reference.</div>
+
+<h2>5.5 Command cheat sheet</h2>
+<table>
+<tr><th>Command</th><th>What it does</th></tr>
+<tr><td><code>docker login localhost:8082</code></td><td>Authenticate to Harbor (robot or admin creds)</td></tr>
+<tr><td><code>docker push localhost:8082/library/go-api:42</code></td><td>Push an image to a Harbor project/repo</td></tr>
+<tr><td><code>curl http://localhost:8082/api/v2.0/ping</code></td><td>Health-check the Harbor API (used by bootstrap polling)</td></tr>
+<tr><td><code>curl -u admin:Harbor12345 http://localhost:8082/api/v2.0/projects</code></td><td>List Harbor projects via REST API</td></tr>
+<tr><td>Harbor UI → Project → Repositories → tag → <b>Vulnerability</b> tab</td><td>View Trivy-adapter scan results in-browser</td></tr>
+</table>
+
+<!-- ===================== 6. JENKINS ===================== -->
+<h1>6. Jenkins</h1>
+
+<h2>6.1 Core concepts</h2>
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td><b>Declarative Pipeline</b></td><td>A <code>Jenkinsfile</code> written in a structured <code>pipeline { stages { ... } }</code> DSL, checked into the app repo (pipeline-as-code).</td></tr>
+<tr><td><b>Stage</b></td><td>A named phase of the pipeline (Lint, Test, Build, Scan, Push...), shown as a step in Jenkins' UI ("Blue Ocean" style graph).</td></tr>
+<tr><td><b>Agent</b></td><td>Where a stage/pipeline actually executes. This project uses <code>agent any</code> — run directly on the single Jenkins controller container (no separate build agents).</td></tr>
+<tr><td><b>Credentials store</b></td><td>Jenkins' encrypted vault for secrets (SSH keys, username/password pairs), referenced by ID in the Jenkinsfile — never hardcoded.</td></tr>
+<tr><td><b>SCM polling trigger</b></td><td>Jenkins periodically checks the source repo for new commits (vs. a webhook, which pushes notifications instantly). This project polls every ~5 min via cron syntax <code>H/5 * * * *</code>.</td></tr>
+<tr><td><b>init.groovy.d</b></td><td>Groovy scripts a Jenkins controller auto-runs on JVM startup, before the setup wizard — used here for fully headless (no-click) provisioning.</td></tr>
+</table>
+
+<h2>6.2 Headless provisioning (<small class="file">scripts/install-jenkins.sh</small>)</h2>
+<p>Rather than clicking through Jenkins' setup wizard, three Groovy scripts are dropped into <code>jenkins_home/init.groovy.d/</code> and run automatically on boot:</p>
+<table>
+<tr><th>Script</th><th>Does</th></tr>
+<tr><td><code>00-security.groovy</code></td><td>Creates the admin user, enables a private security realm, disables anonymous read access</td></tr>
+<tr><td><code>10-credentials.groovy</code></td><td>Registers <code>github-personal-ssh</code> (SSH key) and <code>harbor-robot</code> (username/password) into the global credentials store</td></tr>
+<tr><td><code>20-seed-job.groovy</code></td><td>Programmatically creates the <code>go-api-pipeline</code> job pointed at your fork, with the SCM poll trigger — and explicitly <b>starts</b> that trigger</td></tr>
+</table>
+<div class="note"><strong>Real bug fixed in this repo's git history:</strong> the seed job originally built its <code>SCMTrigger</code> object but never called <code>trigger.start(job, true)</code> before <code>job.save()</code> — so the trigger existed in config but never actually scheduled polls. The fix (commit <i>"Fix seed pipeline job's SCM poll trigger not activating"</i>) added that missing call. A good reminder that configuring an object isn't the same as activating it.</div>
+
+<p>The Jenkins image itself (<code>infrastructure/jenkins/Dockerfile</code>) is <code>jenkins/jenkins:lts-jdk17</code> plus the Docker CLI (bind-mounted host socket = Docker-outside-of-Docker), Go, and the security toolchain (<code>gosec</code>, <code>trivy</code>, <code>golangci-lint</code>, <code>govulncheck</code>, <code>gitleaks</code>) baked in so no stage needs to install tools on the fly.</p>
+
+<h2>6.3 The pipeline, stage by stage (<small class="file">go-api/Jenkinsfile</small>)</h2>
+<pre><code><span class="tag">pipeline</span> {
+  <span class="tag">agent</span> any
+  <span class="tag">environment</span> {
+    REGISTRY   = <span class="str">"localhost:8082"</span>
+    IMAGE_NAME = <span class="str">"library/go-api"</span>
+  }
+  <span class="tag">stages</span> {
+    <span class="tag">stage</span>(<span class="str">'Lint & Format'</span>)          <span class="cmt">// gofmt, go vet, golangci-lint</span>
+    <span class="tag">stage</span>(<span class="str">'Static Security Analysis'</span>) <span class="cmt">// gosec, govulncheck, gitleaks</span>
+    <span class="tag">stage</span>(<span class="str">'Testing'</span>) { <span class="tag">parallel</span> {  <span class="cmt">// unit tests + benchmarks concurrently</span>
+        <span class="tag">stage</span>(<span class="str">'Unit Tests'</span>)  { sh <span class="str">"go test -v -race -coverprofile=coverage.out ./..."</span> }
+        <span class="tag">stage</span>(<span class="str">'Benchmarks'</span>) { sh <span class="str">"go test -bench=. -run=^$ ./..."</span> }
+    } }
+    <span class="tag">stage</span>(<span class="str">'Docker Build'</span>)   <span class="cmt">// docker build over the DooD socket</span>
+    <span class="tag">stage</span>(<span class="str">'Trivy Image Scan'</span>) <span class="cmt">// exit-code 1 on HIGH/CRITICAL CVE = fails build</span>
+    <span class="tag">stage</span>(<span class="str">'Push to Harbor'</span>)  <span class="cmt">// docker login + push :BUILD_NUMBER and :latest</span>
+    <span class="tag">stage</span>(<span class="str">'Update GitOps Chart'</span>) { <span class="tag">sshagent</span>([<span class="str">'github-personal-ssh'</span>]) {
+        <span class="cmt">// clone go-api-helm, bump image.tag via update-chart.sh, commit, push</span>
+    } }
+  }
+}</code></pre>
+
+<p><b>Quality gates that actually fail the build:</b> unformatted code (<code>gofmt -l .</code> non-empty), <code>go vet</code>/<code>golangci-lint</code> issues, and any HIGH/CRITICAL Trivy finding. <b>Non-blocking:</b> <code>gitleaks detect</code> failures are caught with <code>|| echo ...</code> — intentionally advisory only in this sandbox.</p>
+
+<h2>6.4 GitOps handoff — <small class="file">go-api/scripts/update-chart.sh</small></h2>
+<pre><code><span class="cmt"># Usage: update-chart.sh &lt;chart-dir&gt; &lt;image-tag&gt; &lt;app-version&gt; [chart-version]</span>
+yq eval -i <span class="str">'.image.tag = "'"$IMAGE_TAG"'"'</span> values.yaml
+yq eval -i <span class="str">'.appVersion = "'"$APP_VERSION"'"'</span> Chart.yaml
+<span class="cmt"># if no chart version given: auto-bump Chart.yaml's patch version (x.y.Z -> x.y.Z+1)</span></code></pre>
+
+<h2>6.5 Command / concept cheat sheet</h2>
+<table>
+<tr><th>Item</th><th>What it does</th></tr>
+<tr><td><code>Build Now</code> (UI) or <code>curl -X POST .../job/&lt;job&gt;/build</code></td><td>Trigger a pipeline run manually, without waiting for the poll</td></tr>
+<tr><td><code>H/5 * * * *</code></td><td>Cron-style SCM poll every 5 minutes (<code>H</code> = hashed offset to spread load)</td></tr>
+<tr><td><code>withCredentials([usernamePassword(...)])</code></td><td>Injects a stored credential as env vars for the duration of a step block</td></tr>
+<tr><td><code>sshagent(['cred-id']) { ... }</code></td><td>Loads an SSH private key into an agent for git/ssh operations inside the block</td></tr>
+<tr><td><code>docker exec -it jenkins-local bash</code></td><td>Shell into the running Jenkins container to debug</td></tr>
+<tr><td><code>docker logs -f jenkins-local</code></td><td>Tail Jenkins controller logs</td></tr>
+</table>
+
+<!-- ===================== 7. ARGOCD ===================== -->
+<h1>7. ArgoCD</h1>
+
+<h2>7.1 Core concepts — what "GitOps" actually means</h2>
+<p><b>GitOps</b>: Git is the single source of truth for desired cluster state. Instead of a CI job running <code>kubectl apply</code> imperatively, a controller (ArgoCD) continuously <i>pulls</i> the desired state from Git and reconciles the live cluster to match it — including reverting manual <code>kubectl</code> changes ("self-heal") if drift is detected.</p>
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td><b>Application (CRD)</b></td><td>ArgoCD's core object: binds a Git source (repo/path/revision) to a cluster destination (server/namespace).</td></tr>
+<tr><td><b>Sync</b></td><td>The act of reconciling live state to match Git. Can be manual (click "Sync") or <code>automated</code>.</td></tr>
+<tr><td><b>Prune</b></td><td>When automated, delete cluster resources that were removed from Git.</td></tr>
+<tr><td><b>Self-heal</b></td><td>When automated, revert any manual/out-of-band change back to what Git declares.</td></tr>
+<tr><td><b>ApplicationSet</b></td><td>A generator that stamps out multiple <code>Application</code>s from one template (e.g. one per environment).</td></tr>
+<tr><td><b>App-of-Apps</b></td><td>A common pattern (not used in this project) where one root Application manages a set of child Applications.</td></tr>
+</table>
+
+<h2>7.2 This project's <code>Application</code> (<small class="file">go-api-helm/argocd/application.yaml</small>)</h2>
+<pre><code><span class="tag">apiVersion</span>: argoproj.io/v1alpha1
+<span class="tag">kind</span>: Application
+<span class="tag">metadata</span>:
+  name: go-api-dev
+  namespace: argocd
+<span class="tag">spec</span>:
+  source:
+    repoURL: https://github.com/SakthiSP333/go-api-helm.git  <span class="cmt"># HTTPS, read-only</span>
+    targetRevision: main
+    helm:
+      valueFiles: [values.yaml, values-dev.yaml]
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: go-api-dev
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true]</code></pre>
+
+<div class="note"><strong>Only apply one of the two ArgoCD manifests.</strong> <code>application.yaml</code> (single dev Application, applied by <code>install-argocd.sh</code>) and <code>application-set.yaml</code> (fans out dev/stage/prod via a <code>list</code> generator) both try to own an Application named <code>go-api-dev</code> — applying both causes a conflict. Pick one strategy per cluster.</div>
+
+<h2>7.3 Install mechanism used here</h2>
+<p>Unlike the monitoring stack, ArgoCD is installed from the <b>official upstream manifest</b> rather than a Helm chart:</p>
+<pre><code>kubectl create namespace argocd
+kubectl apply -n argocd -f \
+  https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml</code></pre>
+<p>Admin credentials come from the auto-generated <code>argocd-initial-admin-secret</code> Kubernetes Secret — retrieved once at install time and saved to <code>infrastructure/argocd-creds.env</code>.</p>
+
+<h2>7.4 Command cheat sheet</h2>
+<table>
+<tr><th>Command</th><th>What it does</th></tr>
+<tr><td><code>kubectl port-forward svc/argocd-server -n argocd 8085:443</code></td><td>Reach the ArgoCD UI/API locally (what <code>make argocd-ui</code> runs)</td></tr>
+<tr><td><code>kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' \| base64 -d</code></td><td>Retrieve the initial admin password</td></tr>
+<tr><td><code>argocd login localhost:8085</code></td><td>Authenticate the ArgoCD CLI</td></tr>
+<tr><td><code>argocd app list</code></td><td>List all registered Applications</td></tr>
+<tr><td><code>argocd app get go-api-dev</code></td><td>Show sync/health status &amp; resource tree for one Application</td></tr>
+<tr><td><code>argocd app sync go-api-dev</code></td><td>Force an immediate sync instead of waiting for the poll</td></tr>
+<tr><td><code>argocd app diff go-api-dev</code></td><td>Show what would change between Git and the live cluster</td></tr>
+<tr><td><code>argocd app history go-api-dev</code></td><td>List past sync revisions (for rollback)</td></tr>
+<tr><td><code>argocd app rollback go-api-dev &lt;id&gt;</code></td><td>Revert to a previous synced revision</td></tr>
+<tr><td>UI → Application → <b>Refresh</b></td><td>Force ArgoCD to re-fetch Git and recompute diff (used after fixing the ServiceMonitor CRD ordering issue)</td></tr>
+</table>
+
+<!-- ===================== 8. PROMETHEUS & GRAFANA ===================== -->
+<h1>8. Prometheus &amp; Grafana</h1>
+
+<h2>8.1 Core concepts</h2>
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td><b>Prometheus</b></td><td>Pull-based metrics database: it scrapes HTTP <code>/metrics</code> endpoints on a schedule and stores time-series data.</td></tr>
+<tr><td><b>Counter</b></td><td>A metric that only goes up (e.g. total requests). Use <code>rate()</code> in queries to get a per-second rate.</td></tr>
+<tr><td><b>Histogram</b></td><td>Buckets observations (e.g. request duration) so you can compute quantiles like p95/p99 after the fact.</td></tr>
+<tr><td><b>ServiceMonitor (CRD)</b></td><td>Prometheus-Operator's declarative "scrape this Service" config — the Kubernetes-native way to tell Prometheus what to scrape, instead of hand-editing <code>prometheus.yml</code>.</td></tr>
+<tr><td><b>PromQL</b></td><td>Prometheus' query language, used both for alerting rules and Grafana panels.</td></tr>
+<tr><td><b>Grafana</b></td><td>Visualization layer on top of Prometheus (and other data sources) — dashboards, panels, alerting.</td></tr>
+</table>
+
+<h2>8.2 Metrics instrumentation in the app (<small class="file">go-api/internal/middleware/metrics.go</small>)</h2>
+<pre><code><span class="tag">http_requests_total</span>           <span class="cmt">// CounterVec, labels: method, path, status</span>
+<span class="tag">http_request_duration_seconds</span> <span class="cmt">// HistogramVec, default buckets</span>
+
+<span class="cmt">// wired into Gin as middleware, exposed unauthenticated at GET /metrics:</span>
+router.GET(<span class="str">"/metrics"</span>, gin.WrapH(promhttp.Handler()))</code></pre>
+<p>Note <code>/metrics</code> sits <i>outside</i> the <code>/api/v1</code> auth group — Prometheus scrapes it with no bearer token, matching the convention that metrics endpoints are typically network-isolated rather than app-authenticated.</p>
+
+<h2>8.3 Wiring it up: ServiceMonitor → Prometheus → Grafana</h2>
+<div class="flow">
+  <div class="box c-k8s">App pods<br>/metrics</div><div class="arrow">→</div>
+  <div class="box c-mon">ServiceMonitor<br>(scrape cfg)</div><div class="arrow">→</div>
+  <div class="box c-mon">Prometheus<br>(stores series)</div><div class="arrow">→</div>
+  <div class="box c-mon">Grafana<br>(dashboard)</div>
+</div>
+<p>The chart's <code>serviceMonitor.enabled</code> flag (true only in <code>values-dev.yaml</code> by default) gates <i>both</i> the <code>ServiceMonitor</code> template and the <code>grafana-dashboard.yaml</code> ConfigMap — they're only meaningful together, once the monitoring stack exists in-cluster.</p>
+
+<h2>8.4 The pre-built Grafana dashboard panels</h2>
+<table>
+<tr><th>Panel</th><th>PromQL</th></tr>
+<tr><td>Request rate by status</td><td><code>sum by (status) (rate(http_requests_total{...}[5m]))</code></td></tr>
+<tr><td>p95 latency</td><td><code>histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))</code></td></tr>
+<tr><td>5xx error rate</td><td>Same request-rate query filtered to <code>status=~"5.."</code></td></tr>
+</table>
+<p>Auto-discovery works because <code>install-monitoring.sh</code> enables Grafana's sidecar (<code>grafana.sidecar.dashboards.enabled=true</code>, <code>searchNamespace=ALL</code>) which watches for any ConfigMap labeled <code>grafana_dashboard: "1"</code> cluster-wide and loads its JSON automatically — no manual dashboard import needed.</p>
+
+<h2>8.5 Laptop-friendly resource tuning</h2>
+<p><code>install-monitoring.sh</code> installs the <code>kube-prometheus-stack</code> Helm chart with persistence disabled, a short <code>6h</code> retention window, tiny CPU/memory requests across every component, and Alertmanager disabled entirely — this is a learning sandbox, not a durable observability stack.</p>
+
+<h2>8.6 Command cheat sheet</h2>
+<table>
+<tr><th>Command</th><th>What it does</th></tr>
+<tr><td><code>helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack -n monitoring --create-namespace</code></td><td>Installs Prometheus + Grafana + Alertmanager + exporters as one chart</td></tr>
+<tr><td><code>kubectl port-forward svc/kube-prometheus-stack-prometheus -n monitoring 9090:9090</code></td><td>Reach the Prometheus UI (what <code>make prometheus-ui</code> runs)</td></tr>
+<tr><td><code>kubectl port-forward svc/kube-prometheus-stack-grafana -n monitoring 3000:80</code></td><td>Reach the Grafana UI (what <code>make grafana-ui</code> runs)</td></tr>
+<tr><td>Prometheus UI → <b>Status → Targets</b></td><td>Verify your ServiceMonitor is actually being scraped (green = up)</td></tr>
+<tr><td>Prometheus UI → <b>Graph</b>, type a PromQL query</td><td>Ad-hoc metric exploration before building a Grafana panel</td></tr>
+<tr><td><code>kubectl get servicemonitor -A</code></td><td>List all registered scrape configs cluster-wide</td></tr>
+<tr><td><code>curl http://localhost:8081/metrics</code></td><td>See the raw metrics text format the app exposes</td></tr>
+</table>
+
+<!-- ===================== 9. SECURITY TOOLING ===================== -->
+<h1>9. Supporting Security &amp; Quality Tooling</h1>
+
+<table>
+<tr><th>Tool</th><th>Category</th><th>What it checks</th><th>Used where</th></tr>
+<tr><td><b>golangci-lint</b></td><td>Linter</td><td>Aggregates dozens of Go linters (style, bugs, unused code) into one run</td><td>Jenkinsfile "Lint &amp; Format" stage</td></tr>
+<tr><td><b>gosec</b></td><td>SAST</td><td>Scans Go source for common security anti-patterns (SQL injection, weak crypto, etc.)</td><td>Jenkinsfile "Static Security Analysis"</td></tr>
+<tr><td><b>govulncheck</b></td><td>SCA</td><td>Cross-references your dependency graph against the official Go vulnerability database</td><td>Same stage</td></tr>
+<tr><td><b>gitleaks</b></td><td>Secret scanning</td><td>Greps git history/diffs for accidentally-committed credentials/keys</td><td>Same stage (non-blocking here)</td></tr>
+<tr><td><b>Trivy</b></td><td>Container/image scanner</td><td>CVEs in OS packages &amp; language dependencies inside a built image</td><td>Jenkinsfile "Trivy Image Scan" (blocking, HIGH/CRITICAL) <i>and</i> Harbor's built-in scanner UI</td></tr>
+<tr><td><b>syft</b></td><td>SBOM generator</td><td>Produces a Software Bill of Materials for an image</td><td>Baked into the Jenkins image but <b>not currently invoked</b> by any stage — a good exercise to wire in</td></tr>
+</table>
+
+<div class="callout"><strong>Defense in depth, twice over:</strong> vulnerability scanning happens in two independent places — once in CI (Trivy CLI, blocking) and again inside Harbor itself (Trivy adapter, browsable per-tag). Either one catching a CVE is a safety net for the other.</div>
+
+<!-- ===================== 10. MASTER CHEAT SHEET ===================== -->
+<h1>10. Master Command Cheat Sheet</h1>
+
+<h2>10.1 This project's own Makefile</h2>
+<table>
+<tr><th>Command</th><th>Effect</th></tr>
+<tr><td><code>make setup</code> / <code>make bootstrap</code></td><td>Full install: tools → Minikube → Harbor → monitoring → Jenkins → ArgoCD</td></tr>
+<tr><td><code>make clean</code></td><td>Tear everything down (containers, Minikube, generated creds)</td></tr>
+<tr><td><code>make restart</code></td><td><code>clean</code> then <code>bootstrap</code> again</td></tr>
+<tr><td><code>make start</code> / <code>make stop</code></td><td>Start/stop Minikube + Harbor + Jenkins without reinstalling</td></tr>
+<tr><td><code>make test</code> / <code>make lint</code> / <code>make security</code></td><td>Delegate to <code>go-api</code>'s own Makefile targets</td></tr>
+<tr><td><code>make jenkins-ui</code> / <code>make harbor-ui</code> / <code>make argocd-ui</code> / <code>make grafana-ui</code> / <code>make prometheus-ui</code></td><td>Print URL + creds, port-forward where needed</td></tr>
+<tr><td><code>make port-forward</code></td><td>Expose dev/stage/prod app Services on 8081/8083/8084</td></tr>
+<tr><td><code>make logs-dev</code> / <code>logs-stage</code> / <code>logs-prod</code></td><td>Tail app logs per environment</td></tr>
+</table>
+
+<h2>10.2 Quick reference by tool</h2>
+<table>
+<tr><th>Tool</th><th>Most-used commands</th></tr>
+<tr><td>Docker</td><td><code>docker build</code> · <code>docker run</code> · <code>docker ps</code> · <code>docker logs -f</code> · <code>docker exec -it</code> · <code>docker push/pull</code></td></tr>
+<tr><td>kubectl</td><td><code>get</code> · <code>describe</code> · <code>logs -f</code> · <code>exec -it</code> · <code>apply -f</code> · <code>port-forward</code> · <code>rollout status/undo</code></td></tr>
+<tr><td>Helm</td><td><code>template</code> · <code>upgrade --install</code> · <code>lint</code> · <code>list</code> · <code>rollback</code> · <code>uninstall</code></td></tr>
+<tr><td>Harbor (REST)</td><td><code>/api/v2.0/ping</code> · <code>/api/v2.0/projects</code> · UI vulnerability tab</td></tr>
+<tr><td>Jenkins</td><td>Build Now · Blue Ocean pipeline view · Manage Credentials · Console Output</td></tr>
+<tr><td>ArgoCD (CLI/UI)</td><td><code>app list</code> · <code>app get</code> · <code>app sync</code> · <code>app diff</code> · <code>app rollback</code> · UI Refresh</td></tr>
+<tr><td>Prometheus</td><td>Status → Targets · Graph (PromQL) · <code>rate()</code> · <code>histogram_quantile()</code></td></tr>
+<tr><td>Grafana</td><td>Dashboards → Browse · Explore · Add panel</td></tr>
+<tr><td>Trivy</td><td><code>trivy image --severity HIGH,CRITICAL --exit-code 1 &lt;img&gt;</code> · <code>trivy fs .</code></td></tr>
+</table>
+
+<!-- ===================== 11. TROUBLESHOOTING ===================== -->
+<h1>11. Troubleshooting Playbook</h1>
+<p>Straight from this project's README — the four failure modes it explicitly documents:</p>
+
+<table>
+<tr><th>Symptom</th><th>Root cause</th><th>Fix</th></tr>
+<tr><td>Kubernetes can't pull images from Harbor ("insecure registry" error)</td><td>Container runtimes block plain-HTTP registries by default</td><td>Confirm Minikube was started with <code>--insecure-registry="host.minikube.internal:8082"</code> (<code>minikube profile list</code>); if missing, <code>make clean && make setup</code></td></tr>
+<tr><td>Jenkins pipeline fails to log into Harbor</td><td><code>harbor-robot</code> credential race — Jenkins provisioned before <code>harbor-robot.env</code> existed</td><td>Re-run <code>make setup</code> (idempotent) so the credential Groovy script re-reads the current file</td></tr>
+<tr><td>Jenkins can't clone/push to GitHub</td><td><code>github-personal-ssh</code> key doesn't match the account registered on GitHub</td><td>Verify with <code>ssh -T git@github.com</code>; override the key path with <code>PERSONAL_SSH_KEY</code>; re-run <code>make setup</code></td></tr>
+<tr><td>ArgoCD Application shows <code>Unknown</code> / missing CRD</td><td><code>ServiceMonitor</code> template needs Prometheus Operator CRDs, which don't exist until monitoring is installed</td><td>Run <code>scripts/install-monitoring.sh</code>, then force a re-sync in the ArgoCD UI</td></tr>
+</table>
+
+<h2>11.1 General debugging order-of-operations</h2>
+<div class="timeline">
+  <div class="step"><b>1.</b> <code>kubectl get pods -n &lt;ns&gt;</code> — is it <code>Running</code>, <code>CrashLoopBackOff</code>, <code>Pending</code>, <code>ImagePullBackOff</code>?</div>
+  <div class="step"><b>2.</b> <code>kubectl describe pod &lt;pod&gt; -n &lt;ns&gt;</code> — check the <b>Events</b> section at the bottom first.</div>
+  <div class="step"><b>3.</b> <code>kubectl logs &lt;pod&gt; -n &lt;ns&gt;</code> (add <code>--previous</code> if it already restarted).</div>
+  <div class="step"><b>4.</b> For scheduling issues, check node resources: <code>kubectl top nodes</code>, <code>kubectl describe node</code>.</div>
+  <div class="step"><b>5.</b> For CI issues, read the failing stage's console output in Jenkins top-to-bottom — declarative pipelines stop at first failure.</div>
+  <div class="step"><b>6.</b> For GitOps drift, <code>argocd app diff</code> before assuming ArgoCD "isn't working" — it may be correctly reporting a real difference.</div>
+</div>
+
+<!-- ===================== 12. GLOSSARY ===================== -->
+<h1>12. Glossary</h1>
+<table>
+<tr><th>Term</th><th>Definition</th></tr>
+<tr><td>CI (Continuous Integration)</td><td>Automatically building, testing, and scanning every code change</td></tr>
+<tr><td>CD (Continuous Delivery/Deployment)</td><td>Automatically getting a validated build into an environment</td></tr>
+<tr><td>GitOps</td><td>Using Git as the source of truth for infra/app desired state, reconciled by a pull-based controller</td></tr>
+<tr><td>CRD (Custom Resource Definition)</td><td>How Kubernetes lets third parties (ArgoCD, Prometheus Operator) add their own object kinds</td></tr>
+<tr><td>OCI (Open Container Initiative)</td><td>The open standard image/runtime format Docker, Harbor, and Kubernetes all speak</td></tr>
+<tr><td>CVE</td><td>Common Vulnerabilities and Exposures — a public identifier for a known security flaw</td></tr>
+<tr><td>SAST / SCA</td><td>Static Application Security Testing (scans your code) / Software Composition Analysis (scans your dependencies)</td></tr>
+<tr><td>SBOM</td><td>Software Bill of Materials — a manifest of everything inside a built artifact</td></tr>
+<tr><td>Rolling update</td><td>Replacing old Pods with new ones gradually, keeping the app available throughout</td></tr>
+<tr><td>Reconciliation loop</td><td>A controller's continuous "observe → diff → act" cycle (core Kubernetes/ArgoCD pattern)</td></tr>
+<tr><td>Idempotent</td><td>Safe to run more than once with the same result — a design goal of every script in this repo</td></tr>
+</table>
+
+<p style="margin-top:40px; text-align:center; color:#7a8ba3; font-size:11px;">— End of study guide · derived entirely from this repository's own scripts, manifests, and README —</p>
+
+</body>
+</html>
