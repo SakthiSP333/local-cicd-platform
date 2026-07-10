@@ -71,10 +71,13 @@ helm upgrade --install "${RELEASE_NAME}" prometheus-community/kube-prometheus-st
     --set kubeStateMetrics.resources.requests.cpu=25m \
     --set kubeStateMetrics.resources.requests.memory=64Mi \
     --set nodeExporter.resources.requests.cpu=25m \
-    --set nodeExporter.resources.requests.memory=32Mi \
-    --wait --timeout 10m
+    --set nodeExporter.resources.requests.memory=32Mi
 
-# Wait for the key deployments to roll out
+# Deliberately no --wait above: with this many sub-components (Grafana, Prometheus,
+# the Operator, kube-state-metrics, node-exporter), one slow/stuck resource times out
+# the *entire* install with a generic "context deadline exceeded" and no indication of
+# which piece is the problem. Waiting per-resource below gives a specific, attributable
+# failure instead.
 log "Waiting for Grafana to be ready..."
 kubectl rollout status deployment/"${RELEASE_NAME}"-grafana -n "${NAMESPACE}" --timeout=300s
 
@@ -83,6 +86,15 @@ kubectl rollout status deployment/"${RELEASE_NAME}"-operator -n "${NAMESPACE}" -
 
 log "Waiting for the Prometheus StatefulSet to be ready..."
 kubectl rollout status statefulset/prometheus-"${RELEASE_NAME}"-prometheus -n "${NAMESPACE}" --timeout=300s || true
+
+log "Waiting for kube-state-metrics to be ready (non-blocking)..."
+kubectl rollout status deployment/"${RELEASE_NAME}"-kube-state-metrics -n "${NAMESPACE}" --timeout=180s || true
+
+log "Waiting for node-exporter to be ready (non-blocking)..."
+kubectl rollout status daemonset/"${RELEASE_NAME}"-prometheus-node-exporter -n "${NAMESPACE}" --timeout=180s || true
+
+log "Current pod status in '${NAMESPACE}' (for reference):"
+kubectl get pods -n "${NAMESPACE}"
 
 # Write credentials locally
 cat <<EOF > "${CREDS_FILE}"
