@@ -36,8 +36,17 @@ helm repo update
 log "Creating namespace '${NAMESPACE}'..."
 kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
 
+# A previously failed install can leave behind the admission-webhook cert-gen Jobs
+# (Helm's hook-delete-policy doesn't clean up failed hooks, and Job specs are immutable -
+# a stale one blocks the next upgrade even after disabling the feature below).
+log "Removing any leftover admission-webhook Jobs from a previous failed attempt..."
+kubectl delete job -n "${NAMESPACE}" "${RELEASE_NAME}-admission-create" "${RELEASE_NAME}-admission-patch" --ignore-not-found=true
+
 # Install/upgrade kube-prometheus-stack with laptop-friendly values:
-# - no persistent storage (ephemeral, fine for a learning environment)
+# - no persistent storage (ephemeral, fine for a learning environment - storageSpec
+#   already defaults to {}, so it's left unset rather than passed as a mismatched type)
+# - admission webhooks disabled: their cert-gen Job routinely hits BackoffLimitExceeded
+#   on single-node Minikube clusters, and a learning sandbox doesn't need them
 # - small resource requests/limits so it fits comfortably in a Minikube VM
 # - Grafana admin password fixed & retrievable (written to creds file below)
 log "Installing/upgrading '${RELEASE_NAME}' via Helm (this can take a few minutes on first run)..."
@@ -51,7 +60,7 @@ helm upgrade --install "${RELEASE_NAME}" prometheus-community/kube-prometheus-st
     --set grafana.resources.limits.memory=256Mi \
     --set grafana.sidecar.dashboards.enabled=true \
     --set grafana.sidecar.dashboards.searchNamespace=ALL \
-    --set prometheus.prometheusSpec.storageSpec="" \
+    --set prometheusOperator.admissionWebhooks.enabled=false \
     --set prometheus.prometheusSpec.retention=6h \
     --set prometheus.prometheusSpec.resources.requests.cpu=100m \
     --set prometheus.prometheusSpec.resources.requests.memory=256Mi \
