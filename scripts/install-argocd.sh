@@ -27,9 +27,11 @@ fi
 log "Creating namespace 'argocd'..."
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 
-# Install ArgoCD via official manifests
+# Install ArgoCD via official manifests. Server-side apply is required here: the
+# ApplicationSet CRD alone exceeds the 262144-byte cap on client-side apply's
+# last-applied-configuration annotation.
 log "Applying ArgoCD stable manifests..."
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 # Wait for deployments
 log "Waiting for ArgoCD server components to be ready..."
