@@ -65,16 +65,18 @@ def env = System.getenv()
 String adminUser = env.getOrDefault('JENKINS_ADMIN_USER', 'admin')
 String adminPassword = env.getOrDefault('JENKINS_ADMIN_PASSWORD', 'admin123')
 
+// Re-applied on every start, not just when there are no users yet: createAccount()
+// overwrites the password of an existing account with the same name (it doesn't
+// no-op), so this keeps the admin password in sync with JENKINS_ADMIN_PASSWORD/
+// jenkins-creds.env instead of silently drifting after the first run.
 def realm = new HudsonPrivateSecurityRealm(false)
-if (realm.getAllUsers().isEmpty()) {
-    realm.createAccount(adminUser, adminPassword)
-    instance.setSecurityRealm(realm)
+realm.createAccount(adminUser, adminPassword)
+instance.setSecurityRealm(realm)
 
-    def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
-    strategy.setAllowAnonymousRead(false)
-    instance.setAuthorizationStrategy(strategy)
-    instance.save()
-}
+def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
+strategy.setAllowAnonymousRead(false)
+instance.setAuthorizationStrategy(strategy)
+instance.save()
 GROOVY
 
 # Credentials contain secret material (SSH key, Harbor robot secret) - assemble them with

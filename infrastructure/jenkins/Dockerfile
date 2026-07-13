@@ -21,8 +21,21 @@ RUN curl -Lo /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download
 
 # Install security and linting tools
 RUN curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b /usr/local/bin v2.18.2 && \
-    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.45.1 && \
     curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin v1.55.2
+
+# Install Trivy via a direct release download - the aquasecurity install.sh script proved
+# flaky against this pinned old version, so fetch the same way install-tools.sh does on
+# the host (also bumped to a version that's actually still published).
+RUN TRIVY_VERSION=0.72.0 && \
+    ARCH="$(dpkg --print-architecture)" && \
+    case "${ARCH}" in \
+        amd64) TRIVY_ARCH="64bit" ;; \
+        arm64) TRIVY_ARCH="ARM64" ;; \
+        *) echo "Unsupported architecture: ${ARCH}" && exit 1 ;; \
+    esac && \
+    curl -Lo trivy.tar.gz "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${TRIVY_ARCH}.tar.gz" && \
+    tar -xzf trivy.tar.gz -C /usr/local/bin trivy && \
+    rm -f trivy.tar.gz
 
 # Install govulncheck
 RUN curl -Lo /usr/local/bin/govulncheck-bin https://github.com/golang/vuln/releases/download/latest/govulncheck || true
