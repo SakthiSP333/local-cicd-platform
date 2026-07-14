@@ -94,7 +94,19 @@ import com.cloudbees.jenkins.plugins.sshcredentials.impl.*
 def instance = Jenkins.get()
 def domain = Domain.global()
 def store = instance.getExtensionList('com.cloudbees.plugins.credentials.SystemCredentialsProvider')[0].getStore()
-def existingIds = store.getCredentials(domain).collect { it.id }
+
+// Re-applied on every start rather than gated on "does this ID already exist": the SSH
+// key and Harbor robot secret can both change between runs (create-harbor-project.sh
+// mints a brand new robot secret each time it runs), so only creating these credentials
+// once would leave jenkins_home permanently pinned to whatever was valid on the very
+// first boot - silently breaking checkouts/pushes after any later Harbor/key rotation.
+def replaceCredentials = { id, newCred ->
+    def existing = store.getCredentials(domain).find { it.id == id }
+    if (existing != null) {
+        store.removeCredentials(domain, existing)
+    }
+    store.addCredentials(domain, newCred)
+}
 
 def githubSshKey = '''
 GROOVY_HEAD
@@ -102,18 +114,16 @@ GROOVY_HEAD
     cat <<'GROOVY_MID'
 '''
 
-if (!existingIds.contains('github-personal-ssh')) {
-    def keySource = new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource(githubSshKey)
-    def sshCred = new BasicSSHUserPrivateKey(
-        CredentialsScope.GLOBAL,
-        'github-personal-ssh',
-        'git',
-        keySource,
-        '',
-        'SSH key for pushing go-api-helm version bumps to GitHub'
-    )
-    store.addCredentials(domain, sshCred)
-}
+def keySource = new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource(githubSshKey)
+def sshCred = new BasicSSHUserPrivateKey(
+    CredentialsScope.GLOBAL,
+    'github-personal-ssh',
+    'git',
+    keySource,
+    '',
+    'SSH key for pushing go-api-helm version bumps to GitHub'
+)
+replaceCredentials('github-personal-ssh', sshCred)
 
 def harborUser = '''
 GROOVY_MID
@@ -126,16 +136,14 @@ GROOVY_TAIL1
     cat <<'GROOVY_TAIL2'
 '''
 
-if (!existingIds.contains('harbor-robot')) {
-    def harborCred = new UsernamePasswordCredentialsImpl(
-        CredentialsScope.GLOBAL,
-        'harbor-robot',
-        'Harbor robot account for pushing go-api images',
-        harborUser.trim(),
-        harborSecret.trim()
-    )
-    store.addCredentials(domain, harborCred)
-}
+def harborCred = new UsernamePasswordCredentialsImpl(
+    CredentialsScope.GLOBAL,
+    'harbor-robot',
+    'Harbor robot account for pushing go-api images',
+    harborUser.trim(),
+    harborSecret.trim()
+)
+replaceCredentials('harbor-robot', harborCred)
 GROOVY_TAIL2
 } > "${JENKINS_HOME_DIR}/init.groovy.d/10-credentials.groovy"
 

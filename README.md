@@ -36,7 +36,7 @@ graph TD
         GitHubHelm -->|Read Helm Manifests| ArgoCD
     end
 
-    subgraph Kubernetes Cluster (Minikube)
+    subgraph "Kubernetes Cluster (Minikube)"
         ArgoCD -->|Sync State| K8s[Minikube Cluster]
         K8s -->|Pull Image| Harbor
         K8s -->|Rolling Update Live| Pods[Go REST API Pods]

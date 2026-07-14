@@ -108,9 +108,9 @@ port-forward:
 	@echo "  -> Dev environment: http://localhost:8081"
 	@echo "  -> Stage environment: http://localhost:8083"
 	@echo "  -> Prod environment: http://localhost:8084"
-	@kubectl port-forward svc/go-api -n go-api-dev 8081:80 & \
-	 kubectl port-forward svc/go-api -n go-api-stage 8083:80 & \
-	 kubectl port-forward svc/go-api -n go-api-prod 8084:80 & \
+	@kubectl port-forward svc/go-api-dev -n go-api-dev 8081:80 & \
+	 kubectl port-forward svc/go-api-stage -n go-api-stage 8083:80 & \
+	 kubectl port-forward svc/go-api-prod -n go-api-prod 8084:80 & \
 	 wait
 
 logs-dev:

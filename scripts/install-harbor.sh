@@ -38,8 +38,19 @@ cp "${HARBOR_DIR}/harbor.yml.tmpl" "${HARBOR_DIR}/harbor.yml"
 
 # Use yq or sed to modify harbor.yml
 # We need to disable HTTPS and set HTTP port to 8082 to avoid conflict with Jenkins (8080)
-# Also set hostname to localhost
-sed -i 's/^hostname: .*/hostname: localhost/' "${HARBOR_DIR}/harbor.yml"
+#
+# hostname must NOT be "localhost": Harbor embeds it in the registry's WWW-Authenticate
+# token-realm URL, and "localhost" resolves to whichever machine is asking - that's fine
+# for Jenkins (it pushes over the host's Docker socket) but breaks image pulls from
+# Minikube's own Docker daemon, since its "localhost" is the Minikube node, not the host.
+# Use the address Minikube maps host.minikube.internal to instead - reachable from both
+# the host and from inside Minikube.
+MINIKUBE_HOST_IP="$(minikube ssh -- getent hosts host.minikube.internal 2>/dev/null | awk '{print $1}')"
+if [ -z "${MINIKUBE_HOST_IP}" ]; then
+    log_error "Could not resolve host.minikube.internal from inside Minikube; is Minikube running?"
+    exit 1
+fi
+sed -i "s/^hostname: .*/hostname: ${MINIKUBE_HOST_IP}/" "${HARBOR_DIR}/harbor.yml"
 sed -i 's/^  port: 80/  port: 8082/' "${HARBOR_DIR}/harbor.yml"
 
 # Comment out HTTPS block
